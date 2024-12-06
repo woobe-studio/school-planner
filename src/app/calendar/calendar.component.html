@@ -16,31 +16,7 @@
       </div>
 
       <div class="calendar-controls">
-        <!-- Navigation buttons -->
-        <button
-          mat-icon-button
-          (click)="previous()"
-          (keydown.enter)="previous()"
-          (keydown.space)="previous()"
-        >
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <button
-          mat-stroked-button
-          (click)="viewToday()"
-          (keydown.enter)="viewToday()"
-          (keydown.space)="viewToday()"
-        >
-          Today
-        </button>
-        <button
-          mat-icon-button
-          (click)="next()"
-          (keydown.enter)="next()"
-          (keydown.space)="next()"
-        >
-          <mat-icon>chevron_right</mat-icon>
-        </button>
+
         <button
           mat-flat-button
           (click)="selectDate()"
