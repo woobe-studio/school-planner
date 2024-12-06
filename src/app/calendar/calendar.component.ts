@@ -8,6 +8,7 @@ interface Appointment {
   uuid?: string;
   date: Date;
   title: string;
+  teacher: string;
   startTime: string;
   endTime: string;
   color?: string;
@@ -35,125 +36,13 @@ export class CalendarComponent {
       uuid: '00000000-0000-0000-0000-000000000002',
       date: new Date(new Date().getFullYear(), new Date().getMonth(), 2),
       title: 'Lunch with Alice',
+      teacher: 'Nobody',
       startTime: '12:00',
       endTime: '13:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000003',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 3),
-      title: 'Project Deadline',
-      startTime: '15:00',
-      endTime: '16:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000007',
-      date: new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        new Date().getDate() + 4
-      ),
-      title: 'Client Call',
-      startTime: '09:30',
-      endTime: '10:30',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000008',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 8),
-      title: 'Gym',
-      startTime: '17:00',
-      endTime: '18:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000009',
-      date: new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        new Date().getDate() - 1
-      ),
-      title: 'Dentist Appointment',
-      startTime: '11:30',
-      endTime: '12:30',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-00000000000a',
-      date: new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        new Date().getDate() - 2
-      ),
-      title: 'Birthday Party',
-      startTime: '19:00',
-      endTime: '21:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-00000000000b',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 11),
-      title: 'Conference',
-      startTime: '13:00',
-      endTime: '14:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-00000000000c',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 12),
-      title: 'Workshop',
-      startTime: '10:00',
-      endTime: '12:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-00000000000e',
-      date: new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        new Date().getDate() + 2
-      ),
-      title: 'Networking Event',
-      startTime: '18:00',
-      endTime: '20:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-00000000000f',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 16),
-      title: 'Yoga Class',
-      startTime: '07:00',
-      endTime: '08:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000010',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 16),
-      title: 'Strategy Meeting',
-      startTime: '10:00',
-      endTime: '11:30',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000011',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 17),
-      title: 'Call with Investor',
-      startTime: '14:00',
-      endTime: '15:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000012',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 18),
-      title: 'Team Lunch',
-      startTime: '12:00',
-      endTime: '13:00',
-    },
-    {
-      uuid: '00000000-0000-0000-0000-000000000013',
-      date: new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        new Date().getDate() + 3
-      ),
-      title: 'HR Meeting',
-      startTime: '16:00',
-      endTime: '17:00',
-    },
+    }
   ];
   currentView: CalendarView = CalendarView.Month;
   timeSlots: string[] = [];
-
-  weeks: Date[][] = [];
 
   constructor(public dialog: MatDialog) {
     this.appointments.forEach((appointment) => {
@@ -165,9 +54,6 @@ export class CalendarComponent {
 
   generateView(view: CalendarView, date: Date) {
     switch (view) {
-      case CalendarView.Month:
-        this.generateMonthView(date);
-        break;
       case CalendarView.Week:
         this.generateWeekView(date);
         break;
@@ -175,43 +61,9 @@ export class CalendarComponent {
         this.generateDayView(date);
         break;
       default:
-        this.generateMonthView(date);
+        this.generateWeekView(date);
     }
   }
-
-  generateMonthView(date: Date) {
-    const start = new Date(date.getFullYear(), date.getMonth(), 1);
-    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    this.weeks = [];
-    this.monthDays = [];
-    let week: Date[] = [];
-
-    for (let day = start.getDay(); day > 0; day--) {
-      const prevDate = new Date(start);
-      prevDate.setDate(start.getDate() - day);
-      if (prevDate.getDay() !== 0 && prevDate.getDay() !== 6) { // Exclude weekends
-        week.push(prevDate);
-        this.monthDays.push(prevDate);
-      }
-    }
-
-    for (let day = 1; day <= end.getDate(); day++) {
-      const currentDate = new Date(date.getFullYear(), date.getMonth(), day);
-      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Exclude weekends
-        this.monthDays.push(currentDate);
-        week.push(currentDate);
-        if (week.length === 5) { // Only allow 5 days in a week
-          this.weeks.push(week);
-          week = [];
-        }
-      }
-    }
-
-    if (week.length > 0) {
-      this.weeks.push(week);
-    }
-  }
-
 
   generateWeekView(date: Date) {
     const startOfWeek = this.startOfWeek(date);
@@ -251,9 +103,7 @@ export class CalendarComponent {
 
   isSameDate(date1: Date, date2: Date): boolean {
     return (
-      date1.getDate() === date2.getDate() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getFullYear() === date2.getFullYear()
+      date1.getDate() === date2.getDate()
     );
   }
 
@@ -313,6 +163,7 @@ export class CalendarComponent {
   addAppointment(
     date: Date,
     title: string,
+    teacher: string,
     startTime: string,
     endTime: string
   ) {
@@ -320,6 +171,7 @@ export class CalendarComponent {
       uuid: this.generateUUID(),
       date,
       title,
+      teacher,
       startTime,
       endTime,
       color: this.getRandomColor(),
@@ -339,6 +191,7 @@ export class CalendarComponent {
       data: {
         date: this.selectedDate,
         title: '',
+        teacher: '',
         startTime: this.selectedStartTime || `${h}:${m}`,
         endTime: this.selectedStartTime || `${h}:${m}`,
       },
@@ -349,6 +202,7 @@ export class CalendarComponent {
         this.addAppointment(
           result.date,
           result.title,
+          result.teacher,
           result.startTime,
           result.endTime
         );

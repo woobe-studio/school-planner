@@ -41,6 +41,7 @@ export class AppointmentDialogComponent {
       uuid: string;
       date: Date;
       title: string;
+      teacher: string;
       startTime: string;
       endTime: string;
       color: string;
@@ -53,6 +54,7 @@ export class AppointmentDialogComponent {
     this.appointmentForm = this.formBuilder.group(
       {
         title: [this.data.title || '', Validators.required],
+        teacher: [this.data.teacher || '', Validators.required],
         date: [this.selectedWeekday, Validators.required], // Weekday selected instead of date
         startTime: [this.data.startTime || '', Validators.required],
         endTime: [this.data.endTime || '', Validators.required],
@@ -76,6 +78,7 @@ export class AppointmentDialogComponent {
     if (this.appointmentForm.valid) {
       const data = {
         title: this.appointmentForm.controls['title'].value,
+        teacher: this.appointmentForm.controls['teacher'].value,
         date: this.getSelectedDate(), // Convert weekday to actual date
         startTime: this.appointmentForm.controls['startTime'].value,
         endTime: this.appointmentForm.controls['endTime'].value,

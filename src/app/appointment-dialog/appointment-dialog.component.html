@@ -9,6 +9,11 @@
       </mat-form-field>
 
       <mat-form-field class="form-field">
+        <mat-label>Teacher</mat-label>
+        <input formControlName="teacher" matInput />
+      </mat-form-field>
+
+      <mat-form-field class="form-field">
         <mat-label>Day</mat-label>
         <mat-select formControlName="date" [(value)]="selectedWeekday">
           <mat-option *ngFor="let weekday of weekdays" [value]="weekday">
@@ -26,6 +31,7 @@
         <mat-label>End Time</mat-label>
         <input matInput formControlName="endTime" type="time" />
       </mat-form-field>
+
 
       <div
         *ngIf="appointmentForm.errors && appointmentForm.errors['timeRangeInvalid']"
