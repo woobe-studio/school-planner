@@ -39,6 +39,12 @@
       >
         End time must be after start time.
       </div>
+      <div
+        *ngIf="appointmentForm.errors && appointmentForm.errors['teacherUnavailable']"
+        class="error"
+      >
+        This teacher is already scheduled for another appointment at this time.
+      </div>
     </div>
 
     <div mat-dialog-actions align="end">
