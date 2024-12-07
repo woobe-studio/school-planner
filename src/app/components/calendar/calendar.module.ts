@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { CalendarComponent } from './calendar.component';
 import { RouterModule, Routes } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { FormsModule } from '@angular/forms';
 import {
   MatButtonToggle,
   MatButtonToggleGroup,
@@ -11,13 +12,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppointmentDialogComponent } from '../appointment-dialog/appointment-dialog.component';
 import {MatOption} from "@angular/material/core";
-import {MatSelect} from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
+
 
 const routes: Routes = [{ path: '', component: CalendarComponent }];
 
 @NgModule({
   declarations: [CalendarComponent],
-    imports: [
+  imports: [
+    FormsModule,
         CommonModule,
         MatButtonModule,
         MatButtonToggleGroup,
@@ -27,7 +30,8 @@ const routes: Routes = [{ path: '', component: CalendarComponent }];
         AppointmentDialogComponent,
         RouterModule.forChild(routes),
         MatOption,
-        MatSelect,
+    MatSelect,
+    
     ],
 })
 export class CalendarModule {}

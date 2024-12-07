@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { ReactiveFormsModule } from '@angular/forms';
+import {  Input, Output, EventEmitter } from '@angular/core';
 
 import { DateService} from "../../services/date.service";
 import { timeRangeValidator} from "../../validators/time-range.validator";
@@ -29,6 +30,18 @@ import { timeRangeValidator} from "../../validators/time-range.validator";
 export class AppointmentDialogComponent {
   appointmentForm: FormGroup;
   selectedWeekday: string;
+
+  @Input() appointmentData!: {
+    uuid: string;
+    date: Date;
+    title: string;
+    teacher: string;
+    startTime: string;
+    endTime: string;
+  };
+  @Output() save = new EventEmitter<any>();
+  @Output() delete = new EventEmitter<string>();
+  @Output() cancel = new EventEmitter<void>();
 
   constructor(
     public dialogRef: MatDialogRef<AppointmentDialogComponent>,
@@ -90,5 +103,9 @@ export class AppointmentDialogComponent {
   // Access the weekdays from DateService
   get weekdays() {
     return this.dateService.weekdays;
+
+  }
+  onCancelClick(): void {
+    this.cancel.emit();
   }
 }

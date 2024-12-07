@@ -1,151 +1,155 @@
 <div class="container" cdkDropListGroup>
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <div>
-                <!-- View Switch Toggle -->
-                <mat-button-toggle-group
-                        class="calendar-view-toggle"
-                        name="currentView"
-                        (change)="switchToView($event.value)"
-                        aria-label="Calendar-View"
-                >
-                    <mat-button-toggle value="week">Week</mat-button-toggle>
-                    <mat-button-toggle value="day">Day</mat-button-toggle>
-                </mat-button-toggle-group>
-            </div>
+  <div class="calendar-container">
+    <div class="calendar-header">
+      <div>
 
-            <div class="calendar-controls">
-                <button
-                        mat-flat-button
-                        (click)="selectDate()"
-                        (keydown.enter)="selectDate()"
-                        (keydown.space)="selectDate()"
-                >
-                    Add Appointment
-                </button>
-                <button
-                        mat-button
-                        (click)="showTeachersDropdown = !showTeachersDropdown"
-                        *ngIf="!selectedTeacher"
-                >
-                    Filter by Teacher
-                </button>
+        <!-- View Switch Toggle -->
+        <mat-button-toggle-group class="calendar-view-toggle"
+                                 name="currentView"
+                                 [(ngModel)]="currentView"
+                                 (change)="switchToView($event.value)"
+                                 aria-label="Calendar-View">
+          <mat-button-toggle value="week">Week</mat-button-toggle>
+          <mat-button-toggle value="day">Day</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
 
-                <mat-select
-                        *ngIf="showTeachersDropdown"
-                        placeholder="Select Teacher"
-                        (selectionChange)="filterByTeacher($event.value)"
-                >
-                    <mat-option *ngFor="let teacher of uniqueTeachers" [value]="teacher">
-                        {{ teacher }}
-                    </mat-option>
-                </mat-select>
+      <div class="calendar-controls">
+        <button mat-flat-button
+                color="primary"
+                (click)="selectDate()"
+                (keydown.enter)="selectDate()"
+                (keydown.space)="selectDate()">
+          Add Appointment
+        </button>
 
-                <button *ngIf="selectedTeacher" mat-button (click)="clearTeacherFilter()">
-                    Clear Filter
-                </button>
-            </div>
-        </div>
+        <button mat-button
+                (click)="showTeachersDropdown = !showTeachersDropdown"
+                *ngIf="!selectedTeacher">
+          Filter by Teacher
+        </button>
 
-        <!-- Week View -->
-        <table
-                width="100%"
-                cellspacing="0"
-                cellpadding="0"
-                class="calendar-view-week"
-                *ngIf="currentView === 'week'"
-        >
-            <thead>
-            <tr>
-                <th></th>
-                <th *ngFor="let day of weekDays; index as i">{{ day }}</th>
-            </tr>
-            </thead>
-            <tbody cdkDropListGroup>
-            <tr *ngFor="let timeSlot of timeSlots">
-                <td [width]="10" class="calendar-slot-cell">
-                    <span>{{ timeSlot }}</span>
-                </td>
-                <td
-                        *ngFor="let day of monthDays; index as i"
-                        cdkDropList
-                        (cdkDropListDropped)="drop($event, monthDays[i], timeSlot)"
-                        [cdkDropListData]="appointments"
-                >
-                    <div
-                            (click)="selectDate(monthDays[i], timeSlot)"
-                            (keydown.enter)="selectDate(monthDays[i], timeSlot)"
-                            (keydown.space)="selectDate(monthDays[i], timeSlot)"
-                            class="cell-overlay"
-                            tabindex="0"
-                    ></div>
-                    <div
-                            tabindex="0"
-                            *ngFor="
-                let appointment of getFilteredAppointmentsForDateTime(monthDays[i], timeSlot)
-              "
-                            class="appointment"
-                            cdkDrag
-                            cdkDragHandle
-                            [cdkDragData]="appointment"
-                            [ngStyle]="{ 'background-color': appointment.color }"
-                            (click)="editAppointment(appointment, $event)"
-                            (keydown.enter)="editAppointment(appointment, $event)"
-                            (keydown.space)="editAppointment(appointment, $event)"
-                    >
-                        <span>{{ appointment.title }}</span>
-                        <span>{{ appointment.teacher }}</span>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+        <mat-select *ngIf="showTeachersDropdown"
+                    placeholder="Select Teacher"
+                    (selectionChange)="filterByTeacher($event.value)">
+          <mat-option *ngFor="let teacher of uniqueTeachers"
+                      [value]="teacher">
+            {{ teacher }} ({{ getTeacherTotalHours(teacher) }} hrs)
+          </mat-option>
+        </mat-select>
 
-        <!-- Day View -->
-        <table
-                width="100%"
-                cellspacing="0"
-                cellpadding="0"
-                class="calendar-view-day"
-                *ngIf="currentView === 'day'"
-        >
-            <tbody cdkDropListGroup>
-            <tr *ngFor="let slot of timeSlots">
-                <td [width]="10" class="calendar-slot-cell">
-                    <span>{{ slot }}</span>
-                </td>
-                <td
-                        cdkDropList
-                        (cdkDropListDropped)="drop($event, monthDays[0], slot)"
-                        [cdkDropListData]="appointments"
-                >
-                    <div
-                            (click)="selectDate(monthDays[0], slot)"
-                            (keydown.enter)="selectDate(monthDays[0], slot)"
-                            (keydown.space)="selectDate(monthDays[0], slot)"
-                            class="cell-overlay"
-                            tabindex="0"
-                    ></div>
-                    <div
-                            tabindex="0"
-                            *ngFor="
-                let appointment of getFilteredAppointmentsForDateTime(monthDays[0], slot)
-              "
-                            class="appointment"
-                            cdkDrag
-                            cdkDragHandle
-                            [cdkDragData]="appointment"
-                            [ngStyle]="{ 'background-color': appointment.color }"
-                            (click)="editAppointment(appointment, $event)"
-                            (keydown.enter)="editAppointment(appointment, $event)"
-                            (keydown.space)="editAppointment(appointment, $event)"
-                    >
-                        <span>{{ appointment.title }}</span>
-                        <span>{{ appointment.teacher }}</span>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+        <button mat-icon-button
+                (click)="toggleTeacherSort()"
+                *ngIf="showTeachersDropdown"
+                aria-label="Toggle Teacher Sort">
+          {{ getTeacherSortLabel() }}
+        </button>
+
+        <button *ngIf="selectedTeacher"
+                mat-button
+                (click)="clearTeacherFilter()">
+          Clear Filter
+        </button>
+      </div>
     </div>
+
+    <!-- Week View -->
+    <table width="100%"
+           cellspacing="0"
+           cellpadding="0"
+           class="calendar-view-week"
+           *ngIf="currentView === 'week'">
+      <thead>
+        <tr>
+          <th class="time-column"></th>
+          <th *ngFor="let day of monthDays">
+            {{ day | date:'EEEE' }} <!-- Tylko nazwy dni tygodnia -->
+          </th>
+        </tr>
+      </thead>
+
+      <tbody cdkDropListGroup>
+        <tr *ngFor="let timeSlot of timeSlots">
+          <td class="calendar-slot-cell">
+            <span>{{ timeSlot }}</span>
+          </td>
+          <td *ngFor="let day of monthDays"
+              cdkDropList
+              (cdkDropListDropped)="drop($event, day, timeSlot)"
+              [cdkDropListData]="appointments">
+            <div (click)="selectDate(day, timeSlot)"
+                 (keydown.enter)="selectDate(day, timeSlot)"
+                 (keydown.space)="selectDate(day, timeSlot)"
+                 class="cell-overlay"
+                 tabindex="0"></div>
+
+            <div *ngFor="let appointment of getFilteredAppointmentsForDateTime(day, timeSlot)"
+                 cdkDrag
+                 cdkDragHandle
+                 [cdkDragData]="appointment"
+                 class="appointment"
+                 [ngClass]="{'selected-teacher': selectedTeacher && appointment.teacher === selectedTeacher}"
+                 (click)="editAppointment(appointment, $event)">
+              <div class="appointment-content">
+                <span class="appointment-title">{{ appointment.title }}</span>
+                <span class="appointment-teacher">{{ appointment.teacher }}</span>
+                <span class="appointment-time">
+                  {{ appointment.startTime }} - {{ appointment.endTime }}
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Day View -->
+    <table width="100%"
+           cellspacing="0"
+           cellpadding="0"
+           class="calendar-view-day"
+           *ngIf="currentView === 'day'">
+      <thead>
+        <tr>
+          <th class="time-column"></th>
+          <th>
+            {{ monthDays[0] | date:'fullDate' }}
+          </th>
+        </tr>
+      </thead>
+      <tbody cdkDropListGroup>
+        <tr *ngFor="let timeSlot of timeSlots">
+          <td class="calendar-slot-cell">
+            <span>{{ timeSlot }}</span>
+          </td>
+          <td cdkDropList
+              (cdkDropListDropped)="drop($event, monthDays[0], timeSlot)"
+              [cdkDropListData]="appointments">
+            <div (click)="selectDate(monthDays[0], timeSlot)"
+                 (keydown.enter)="selectDate(monthDays[0], timeSlot)"
+                 (keydown.space)="selectDate(monthDays[0], timeSlot)"
+                 class="cell-overlay"
+                 tabindex="0"></div>
+
+            <div *ngFor="let appointment of getFilteredAppointmentsForDateTime(monthDays[0], timeSlot)"
+                 cdkDrag
+                 cdkDragHandle
+                 [cdkDragData]="appointment"
+                 class="appointment"
+                 [ngClass]="{'selected-teacher': selectedTeacher && appointment.teacher === selectedTeacher}"
+                 (click)="editAppointment(appointment, $event)">
+              <div class="appointment-content">
+                <span class="appointment-title">{{ appointment.title }}</span>
+                <span class="appointment-teacher">{{ appointment.teacher }}</span>
+                <span class="appointment-time">
+                  {{ appointment.startTime }} - {{ appointment.endTime }}
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+  </div>
 </div>
