@@ -1,9 +1,9 @@
-import {Component} from '@angular/core';
-
-import {MatDialog} from '@angular/material/dialog';
-import {CdkDragDrop} from '@angular/cdk/drag-drop';
-import {AppointmentDialogComponent} from '../appointment-dialog/appointment-dialog.component';
-import {Appointment} from "../../models/appointment.model";
+import { Component, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { AppointmentDialogComponent } from '../appointment-dialog/appointment-dialog.component';
+import { Appointment } from "../../models/appointment.model";
+import { AppointmentService } from '../../services/appointment.service';
 
 export enum CalendarView {
   Month = 'month',
@@ -16,7 +16,7 @@ export enum CalendarView {
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.scss'],
 })
-export class CalendarComponent {
+export class CalendarComponent implements OnInit {
   viewDate: Date = new Date();
   selectedDate: Date | null = null;
   selectedStartTime: string | undefined;
@@ -34,13 +34,50 @@ export class CalendarComponent {
   ];
   currentView: CalendarView = CalendarView.Month;
   timeSlots: string[] = [];
+  filteredAppointments: Appointment[] = [...this.appointments]; // Initialize filteredAppointments with all appointments
+  selectedTeacher: string | null = null; // Store the selected teacher for filtering
+  uniqueTeachers: string[] = [];
+  showTeachersDropdown = false;
 
-  constructor(public dialog: MatDialog) {
-    this.appointments.forEach((appointment) => {
-      appointment.color = this.getRandomColor();
-    });
+  constructor(
+      public dialog: MatDialog,
+      private appointmentService: AppointmentService
+  ) {}
+
+  ngOnInit(): void {
     this.generateView(this.currentView, this.viewDate);
     this.generateTimeSlots();
+    this.filteredAppointments = [...this.appointments];
+    this.updateTeachersList();
+  }
+
+  updateTeachersList(): void {
+    this.uniqueTeachers = this.appointmentService.getUniqueTeachers(this.appointments);
+  }
+
+  filterByTeacher(teacher: string): void {
+    this.selectedTeacher = teacher;
+  }
+
+  clearTeacherFilter(): void {
+    this.selectedTeacher = null;
+    this.showTeachersDropdown = false;
+  }
+
+  getFilteredAppointmentsForDateTime(date: Date, timeSlot: string): Appointment[] {
+    const appointmentsForTimeSlot = this.appointmentService.getAppointmentsForDateTime(
+        this.appointments,
+        date,
+        timeSlot
+    );
+
+    if (this.selectedTeacher) {
+      return appointmentsForTimeSlot.filter(
+          (appointment) => appointment.teacher === this.selectedTeacher
+      );
+    }
+
+    return appointmentsForTimeSlot;
   }
 
   generateView(view: CalendarView, date: Date) {
@@ -126,51 +163,6 @@ export class CalendarComponent {
       .padStart(2, '0')}`;
   }
 
-  generateUUID(): string {
-    let d = new Date().getTime(); //Timestamp
-    let d2 =
-      (typeof performance !== 'undefined' &&
-        performance.now &&
-        performance.now() * 1000) ||
-      0;
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-      /[xy]/g,
-      function (c) {
-        let r = Math.random() * 16; //random number between 0 and 16
-        if (d > 0) {
-          //Use timestamp until depleted
-          r = (d + r) % 16 | 0;
-          d = Math.floor(d / 16);
-        } else {
-          //Use microseconds since page-load if supported
-          r = (d2 + r) % 16 | 0;
-          d2 = Math.floor(d2 / 16);
-        }
-        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-      }
-    );
-  }
-
-  addAppointment(
-    date: Date,
-    title: string,
-    teacher: string,
-    startTime: string,
-    endTime: string
-  ) {
-    this.appointments.push({
-      uuid: this.generateUUID(),
-      date,
-      title,
-      teacher,
-      startTime,
-      endTime,
-      color: this.getRandomColor(),
-    });
-  }
-
-
-
   openDialog(): void {
     const hour = new Date().getHours();
     const minutes = new Date().getMinutes();
@@ -190,13 +182,15 @@ export class CalendarComponent {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.addAppointment(
+        this.appointments = this.appointmentService.addAppointment(
+          this.appointments,
           result.date,
           result.title,
           result.teacher,
           result.startTime,
           result.endTime
         );
+        this.updateTeachersList();
       }
     });
   }
@@ -217,24 +211,11 @@ export class CalendarComponent {
       // Calculate the new end time based on the original duration
       movedAppointment.endTime = this.calculateEndTime(slot, originalDuration);
     }
-  }
 
-
-  getAppointmentsForDateTime(date: Date, timeSlot: string): Appointment[] {
-    return this.appointments.filter(
-      (appointment) =>
-        this.isSameDate(appointment.date, date) &&
-        appointment.startTime <= timeSlot &&
-        appointment.endTime >= timeSlot
+    this.appointments = this.appointmentService.editAppointment(
+      this.appointments,
+      movedAppointment
     );
-  }
-
-  getRandomColor(): string {
-    const r = Math.floor(Math.random() * 256);
-    const g = Math.floor(Math.random() * 256);
-    const b = Math.floor(Math.random() * 256);
-    const a = 0.4;
-    return `rgba(${r},${g},${b},${a})`;
   }
 
   editAppointment(appointment: Appointment, event: Event) {
@@ -247,15 +228,25 @@ export class CalendarComponent {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        const index = this.appointments.findIndex(
-          (appointment) => appointment.uuid === result.uuid
-        );
         if (result.remove) {
-          this.appointments.splice(index, 1);
+          this.appointments = this.appointments.filter(
+            (appt) => appt.uuid !== result.uuid
+          );
         } else {
-          this.appointments[index] = result;
+          this.appointments = this.appointmentService.editAppointment(
+            this.appointments,
+            result
+          );
         }
       }
     });
+  }
+
+  getAppointmentsForDateTime(date: Date, timeSlot: string): Appointment[] {
+    return this.appointmentService.getAppointmentsForDateTime(
+      this.appointments,
+      date,
+      timeSlot
+    );
   }
 }
