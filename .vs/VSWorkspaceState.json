@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\src",
+    "\\src\\app",
+    "\\src\\app\\components",
+    "\\src\\app\\components\\appointment-dialog",
+    "\\src\\app\\components\\calendar",
+    "\\src\\app\\models",
+    "\\src\\app\\services",
+    "\\src\\app\\validators"
+  ],
+  "SelectedNode": "\\src\\app\\components\\calendar\\calendar.component.ts",
+  "PreviewInSolutionExplorer": false
+}
