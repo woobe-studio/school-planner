@@ -11,7 +11,19 @@ export class AppointmentService {
         private uuidService: UuidService,
         private colorService: ColorService
     ) {}
-
+    hasAppointmentAtTime(
+        appointments: Appointment[],
+        teacher: string,
+        date: Date,
+        startTime: string,
+        endTime: string
+    ): boolean {
+        return appointments.some(appointment =>
+            appointment.teacher === teacher &&
+            this.isSameDate(appointment.date, date) &&
+            !(appointment.endTime <= startTime || appointment.startTime >= endTime)
+        );
+    }
     addAppointment(
         appointments: Appointment[],
         date: Date,

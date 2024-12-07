@@ -11,6 +11,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { DateService} from "../../services/date.service";
 import { timeRangeValidator} from "../../validators/time-range.validator";
+import {teacherAvailabilityValidator} from "../../validators/teacher.validator";
+import {AppointmentService} from "../../services/appointment.service";
 
 @Component({
   selector: 'app-appointment-dialog',
@@ -43,7 +45,8 @@ export class AppointmentDialogComponent {
       color: string;
     },
     private formBuilder: FormBuilder,
-    private dateService: DateService // Inject DateService
+    private dateService: DateService, // Inject DateService
+    private appointmentService: AppointmentService
   ) {
     // Initialize the form and determine the initial weekday selection
     this.selectedWeekday = this.dateService.getWeekdayFromDate(this.data.date || new Date());
@@ -56,7 +59,11 @@ export class AppointmentDialogComponent {
         startTime: [this.data.startTime || '', Validators.required],
         endTime: [this.data.endTime || '', Validators.required],
       },
-      { validators: timeRangeValidator }
+      {         validators: [
+          timeRangeValidator,
+          teacherAvailabilityValidator(this.appointmentService, this.dateService) // Pass services here
+        ]
+      }
     );
   }
 
