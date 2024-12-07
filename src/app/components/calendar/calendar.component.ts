@@ -3,16 +3,7 @@ import {Component} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {CdkDragDrop} from '@angular/cdk/drag-drop';
 import {AppointmentDialogComponent} from '../appointment-dialog/appointment-dialog.component';
-
-interface Appointment {
-  uuid?: string;
-  date: Date;
-  title: string;
-  teacher: string;
-  startTime: string;
-  endTime: string;
-  color?: string;
-}
+import {Appointment} from "../../models/appointment.model";
 
 export enum CalendarView {
   Month = 'month',

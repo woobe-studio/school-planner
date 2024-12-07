@@ -1,19 +1,16 @@
+// appointment-dialog.component.ts
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import {
-  AbstractControl,
-  FormBuilder,
-  FormGroup,
-  Validators,
-  ValidationErrors,
-  ValidatorFn,
-  ReactiveFormsModule
-} from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
-import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
+
+import { DateService} from "../../services/date.service";
+import { timeRangeValidator} from "../../validators/time-range.validator";
 
 @Component({
   selector: 'app-appointment-dialog',
@@ -31,7 +28,6 @@ import { CommonModule } from '@angular/common';
 })
 export class AppointmentDialogComponent {
   appointmentForm: FormGroup;
-  weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   selectedWeekday: string;
 
   constructor(
@@ -46,10 +42,11 @@ export class AppointmentDialogComponent {
       endTime: string;
       color: string;
     },
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private dateService: DateService // Inject DateService
   ) {
     // Initialize the form and determine the initial weekday selection
-    this.selectedWeekday = this.getWeekdayFromDate(this.data.date || new Date());
+    this.selectedWeekday = this.dateService.getWeekdayFromDate(this.data.date || new Date());
 
     this.appointmentForm = this.formBuilder.group(
       {
@@ -59,15 +56,8 @@ export class AppointmentDialogComponent {
         startTime: [this.data.startTime || '', Validators.required],
         endTime: [this.data.endTime || '', Validators.required],
       },
-      { validators: this.timeRangeValidator }
+      { validators: timeRangeValidator }
     );
-  }
-
-  // Automatically determine the weekday from a given date
-  getWeekdayFromDate(date: Date): string {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    const dayOfWeek = date.getDay(); // Returns 0 for Sunday, 1 for Monday, etc.
-    return days[dayOfWeek -1] || 'Monday'; // Ensure we default to Monday if undefined
   }
 
   onNoClick(): void {
@@ -94,35 +84,11 @@ export class AppointmentDialogComponent {
 
   // Convert selected weekday to a Date object based on the original date
   getSelectedDate(): Date {
-    const targetDayOfWeek = this.weekdays.indexOf(this.selectedWeekday) +1; // 1-5 for Monday to Friday
-    const currentDate = new Date(this.data.date); // Use the original date for calculation
-    const currentDayOfWeek = currentDate.getDay(); // Get the day of week (0-6, where 0 is Sunday)
-    const diff = targetDayOfWeek - currentDayOfWeek; // Calculate difference from current day of week
-
-
-    currentDate.setDate(currentDate.getDate() + diff);
-    return currentDate;
+    return this.dateService.getSelectedDate(new Date(this.data.date), this.selectedWeekday);
   }
 
-  // Time range validator for ensuring start time is before end time
-  timeRangeValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
-    const startTime = control.get('startTime')?.value;
-    const endTime = control.get('endTime')?.value;
-
-    if (startTime && endTime) {
-      const [startHours, startMinutes] = startTime.split(':').map(Number);
-      const [endHours, endMinutes] = endTime.split(':').map(Number);
-
-      const startDate = new Date();
-      startDate.setHours(startHours, startMinutes, 0, 0);
-
-      const endDate = new Date();
-      endDate.setHours(endHours, endMinutes, 0, 0);
-
-      if (startDate >= endDate) {
-        return { timeRangeInvalid: true };
-      }
-    }
-    return null;
-  };
+  // Access the weekdays from DateService
+  get weekdays() {
+    return this.dateService.weekdays;
+  }
 }
