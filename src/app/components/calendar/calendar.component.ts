@@ -10,6 +10,7 @@ import {
 } from '@angular/material/button-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
+import { ColorService } from "../../services/color.service"; 
 
 
 export enum CalendarView {
@@ -36,14 +37,7 @@ export class CalendarComponent implements OnInit {
   weekDays: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   monthDays: Date[] = [];
   appointments: Appointment[] = [
-    {
-      uuid: '00000000-0000-0000-0000-000000000002',
-      date: new Date(new Date().getFullYear(), new Date().getMonth(), 2),
-      title: 'Lunch with Alice',
-      teacher: 'Nobody',
-      startTime: '12:00',
-      endTime: '13:00',
-    }
+    
   ];
   currentView: CalendarView = CalendarView.Week;
   timeSlots: string[] = [];
@@ -59,65 +53,54 @@ export class CalendarComponent implements OnInit {
   teacherSortOrder: TeacherSortOrder = TeacherSortOrder.None;
   teacherHoursMap: Map<string, number> = new Map();
 
+  private readonly localStorageKey = 'appointments';
+
   constructor(
     public dialog: MatDialog,
-    private appointmentService: AppointmentService
+    private appointmentService: AppointmentService, private colorService: ColorService
   ) { }
 
   
+  generateRandomColor(): string {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  }
 
+  // Save appointments whenever a new appointment is added or updated
   onDialogSave(data: any): void {
-    // Sprawdź, czy spotkanie już istnieje (edycja istniejącego spotkania)
     if (this.selectedAppointment?.uuid) {
-      // Edytuj istniejące spotkanie
       const index = this.appointments.findIndex(
         (a) => a.uuid === this.selectedAppointment?.uuid
       );
       if (index !== -1) {
-        const updatedAppointment = { ...data, uuid: this.selectedAppointment.uuid };
-
-        // Sprawdź konflikt z innymi spotkaniami przed zapisaniem
-        const hasConflict = this.hasConflictingAppointment(
-          updatedAppointment.teacher,
-          updatedAppointment.date,
-          updatedAppointment.startTime,
-          updatedAppointment.endTime,
-          updatedAppointment.uuid // Ignoruj aktualnie edytowane spotkanie
-        );
-
-        if (hasConflict) {
-          alert('Nauczyciel ma już zajęcia w tym samym czasie!');
-          return;
-        }
-
-        // Brak konfliktu - zapisujemy spotkanie
+        const updatedAppointment = { 
+          ...data, 
+          uuid: this.selectedAppointment.uuid,
+          color: this.generateRandomColor()  // Przypisanie losowego koloru
+        };
         this.appointments[index] = updatedAppointment;
         this.filteredAppointments = [...this.appointments];
+        this.saveAppointmentsToLocalStorage();
       }
     } else {
-      // Dodaj nowe spotkanie
-      const newAppointment = { ...data, uuid: crypto.randomUUID() };
+      const newAppointment = { 
+        ...data, 
+        uuid: crypto.randomUUID(),
+        color: this.generateRandomColor()  // Przypisanie koloru
+      };
 
-      // Sprawdź konflikt z innymi spotkaniami przed zapisaniem
-      const hasConflict = this.hasConflictingAppointment(
-        newAppointment.teacher,
-        newAppointment.date,
-        newAppointment.startTime,
-        newAppointment.endTime
-      );
-
-      if (hasConflict) {
-        alert('Nauczyciel ma już zajęcia w tym samym czasie!');
-        return;
-      }
-
-      // Brak konfliktu - dodaj nowe spotkanie
       this.appointments.push(newAppointment);
       this.filteredAppointments = [...this.appointments];
+      this.saveAppointmentsToLocalStorage();
     }
 
     this.closeDialog();
   }
+
 
   onDialogCancel(): void {
     this.closeDialog();
@@ -129,10 +112,24 @@ export class CalendarComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadAppointmentsFromLocalStorage();
     this.generateView(this.currentView, this.viewDate);
     this.generateTimeSlots();
     this.filteredAppointments = [...this.appointments];
     this.updateTeachersList();
+  }
+
+  saveAppointmentsToLocalStorage(): void {
+    localStorage.setItem('appointments', JSON.stringify(this.appointments));
+  }
+
+  // Method to load appointments from localStorage
+  loadAppointmentsFromLocalStorage(): void {
+    const storedAppointments = localStorage.getItem('appointments');
+    if (storedAppointments) {
+      this.appointments = JSON.parse(storedAppointments);
+      this.filteredAppointments = [...this.appointments];
+    }
   }
 
   // New method to generate view based on current view and date
@@ -290,18 +287,19 @@ export class CalendarComponent implements OnInit {
   }
 
   filterByTeacher(teacher: string): void {
-    this.selectedTeacher = teacher;
-    // Optional: Filter appointments by selected teacher
-    this.filteredAppointments = this.appointments.filter(
-      appointment => appointment.teacher === teacher
-    );
-  }
+  this.selectedTeacher = teacher;
+  this.filteredAppointments = this.appointments.filter(
+    appointment => appointment.teacher === teacher
+  );
+}
+
 
   clearTeacherFilter(): void {
-    this.selectedTeacher = null;
-    this.showTeachersDropdown = false;
-    this.filteredAppointments = [...this.appointments];
-  }
+  this.selectedTeacher = null;
+  this.showTeachersDropdown = false;
+  this.filteredAppointments = [...this.appointments]; // Reset filtered appointments
+}
+
 
   // Method to get display text for current sort order
   getTeacherSortLabel(): string {
@@ -362,15 +360,73 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  getFilteredAppointmentsForDateTime(day: Date, timeSlot: string): Appointment[] {
-    return this.filteredAppointments.filter(appointment => {
-      // Ensure the appointment matches both the day and time slot
-      const isSameDate = this.isSameDay(appointment.date, day);
-      const isInTimeSlot = appointment.startTime === timeSlot;
 
-      return isSameDate && isInTimeSlot;
-    });
+updateFilteredAppointments(): void {
+
+  // Jeśli wybrano nauczyciela, filtrujemy spotkania na podstawie nauczyciela
+  if (this.selectedTeacher) {
+    this.filteredAppointments = this.appointments.filter(
+      appointment => appointment.teacher === this.selectedTeacher
+    );
+  } else {
+    // W przeciwnym razie pokazujemy wszystkie spotkania
+    this.filteredAppointments = [...this.appointments];
   }
+
+  // Sprawdzamy, czy selectedDate nie jest null przed wywołaniem isSameDay
+ // Zastosowanie optional chaining do sprawdzenia selectedDate
+this.filteredAppointments = this.filteredAppointments.filter(appointment =>
+  this.selectedDate?.getTime() && this.isSameDay(appointment.date, this.selectedDate)
+);
+
+}
+
+
+getFilteredAppointmentsForDateTime(day: Date, timeSlot: string): Appointment[] {
+  const filteredAppointments: Appointment[] = [];
+  
+  // Iteruj przez wszystkie spotkania
+  this.appointments.forEach(app => {
+    // Sprawdzaj, czy spotkanie odbywa się tego samego dnia
+    if (this.isSameDay(day, app.date)) {
+      // Sprawdź, czy spotkanie odbywa się w danym przedziale czasowym
+      const [startHour, startMinute] = app.startTime.split(':').map(Number);
+      const [endHour, endMinute] = app.endTime.split(':').map(Number);
+      const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
+
+      const startTime = new Date(day);
+      const endTime = new Date(day);
+      startTime.setHours(startHour, startMinute);
+      endTime.setHours(endHour, endMinute);
+
+      const slotTime = new Date(day);
+      slotTime.setHours(slotHour, slotMinute);
+
+      // Sprawdzenie, czy slot czasowy mieści się w przedziale czasowym spotkania
+      if (slotTime >= startTime && slotTime < endTime) {
+        // Jeśli jest wybrany nauczyciel, filtrujemy po nim
+        if (!this.selectedTeacher || app.teacher === this.selectedTeacher) {
+          filteredAppointments.push(app);
+        } else {
+          // Jeśli nauczyciel jest ustawiony, dodajemy tylko spotkania dla niego
+          // (już uwzględnione powyżej w warunku)
+        }
+      }
+    }
+  });
+
+  return filteredAppointments;
+}
+
+
+clearFilters(): void {
+  this.selectedTeacher = null;
+  this.selectedDate = null;
+  this.updateFilteredAppointments();
+
+}
+
+
 
   editAppointment(appointment: Appointment, event: Event): void {
     event.stopPropagation();
@@ -460,6 +516,51 @@ export class CalendarComponent implements OnInit {
 
       return isSameDay && ((newStart < existingEnd && newEnd > existingStart));
     });
+  }
+
+  isMultiSlot(startTime: string, endTime: string, timeSlot: string): boolean {
+  const start = new Date();
+  const end = new Date();
+  const [startHour, startMinute] = startTime.split(':').map(num => parseInt(num, 10));
+  const [endHour, endMinute] = endTime.split(':').map(num => parseInt(num, 10));
+  const [slotHour] = timeSlot.split(':').map(num => parseInt(num, 10));
+
+  start.setHours(startHour, startMinute);
+  end.setHours(endHour, endMinute);
+
+  return slotHour >= start.getHours() && slotHour < end.getHours();
+}
+
+
+// Additional method to delete an appointment
+  deleteAppointment(appointment: any): void {
+    this.appointments = this.appointments.filter(app => app.uuid !== appointment.uuid);
+    this.filteredAppointments = [...this.appointments];
+    this.saveAppointmentsToLocalStorage(); // Save to localStorage after deletion
+  }
+
+  clearAllAppointments(): void {
+    this.appointments = [];
+    this.filteredAppointments = [];
+    localStorage.removeItem('appointments'); // Remove from localStorage
+  }
+
+  onAppointmentSaved(appointment: any): void {
+    // Check if it's an edit or new appointment
+    const index = this.appointments.findIndex(a => a.uuid === appointment.uuid);
+    if (index !== -1) {
+      // Update existing appointment
+      this.appointments[index] = appointment;
+    } else {
+      // Add new appointment
+      this.appointments.push(appointment);
+    }
+    this.saveAppointmentsToLocalStorage(); // Save to localStorage
+  }
+
+  onAppointmentDeleted(uuid: string): void {
+    this.appointments = this.appointments.filter(a => a.uuid !== uuid);
+    this.saveAppointmentsToLocalStorage(); // Save to localStorage
   }
 
 

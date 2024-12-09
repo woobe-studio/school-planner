@@ -2,7 +2,6 @@
   <div class="calendar-container">
     <div class="calendar-header">
       <div>
-
         <!-- View Switch Toggle -->
         <mat-button-toggle-group class="calendar-view-toggle"
                                  name="currentView"
@@ -54,20 +53,15 @@
     </div>
 
     <!-- Week View -->
-    <table width="100%"
-           cellspacing="0"
-           cellpadding="0"
-           class="calendar-view-week"
-           *ngIf="currentView === 'week'">
+    <table width="100%" cellspacing="0" cellpadding="0" class="calendar-view-week" *ngIf="currentView === 'week'">
       <thead>
         <tr>
           <th class="time-column"></th>
           <th *ngFor="let day of monthDays">
-            {{ day | date:'EEEE' }} <!-- Tylko nazwy dni tygodnia -->
+            {{ day | date:'EEEE' }}
           </th>
         </tr>
       </thead>
-
       <tbody cdkDropListGroup>
         <tr *ngFor="let timeSlot of timeSlots">
           <td class="calendar-slot-cell">
@@ -83,12 +77,17 @@
                  class="cell-overlay"
                  tabindex="0"></div>
 
+            <!-- Render appointments for this day and time slot -->
             <div *ngFor="let appointment of getFilteredAppointmentsForDateTime(day, timeSlot)"
                  cdkDrag
                  cdkDragHandle
                  [cdkDragData]="appointment"
                  class="appointment"
-                 [ngClass]="{'selected-teacher': selectedTeacher && appointment.teacher === selectedTeacher}"
+                 [ngStyle]="{'background-color': appointment.color}"
+                 [ngClass]="{
+                   'selected-teacher': selectedTeacher && appointment.teacher === selectedTeacher,
+                   'multi-slot': isMultiSlot(appointment.startTime, appointment.endTime, timeSlot)
+                 }"
                  (click)="editAppointment(appointment, $event)">
               <div class="appointment-content">
                 <span class="appointment-title">{{ appointment.title }}</span>
@@ -104,17 +103,11 @@
     </table>
 
     <!-- Day View -->
-    <table width="100%"
-           cellspacing="0"
-           cellpadding="0"
-           class="calendar-view-day"
-           *ngIf="currentView === 'day'">
+    <table width="100%" cellspacing="0" cellpadding="0" class="calendar-view-day" *ngIf="currentView === 'day'">
       <thead>
         <tr>
           <th class="time-column"></th>
-          <th>
-            {{ monthDays[0] | date:'fullDate' }}
-          </th>
+          <th>{{ monthDays[0] | date:'fullDate' }}</th>
         </tr>
       </thead>
       <tbody cdkDropListGroup>
@@ -131,12 +124,17 @@
                  class="cell-overlay"
                  tabindex="0"></div>
 
+            <!-- Render appointments for this day and time slot -->
             <div *ngFor="let appointment of getFilteredAppointmentsForDateTime(monthDays[0], timeSlot)"
                  cdkDrag
                  cdkDragHandle
                  [cdkDragData]="appointment"
                  class="appointment"
-                 [ngClass]="{'selected-teacher': selectedTeacher && appointment.teacher === selectedTeacher}"
+                 [ngStyle]="{'background-color': appointment.color}"
+                 [ngClass]="{
+                   'selected-teacher': selectedTeacher && appointment.teacher === selectedTeacher,
+                   'multi-slot': isMultiSlot(appointment.startTime, appointment.endTime, timeSlot)
+                 }"
                  (click)="editAppointment(appointment, $event)">
               <div class="appointment-content">
                 <span class="appointment-title">{{ appointment.title }}</span>
@@ -150,6 +148,5 @@
         </tr>
       </tbody>
     </table>
-    
   </div>
 </div>

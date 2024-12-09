@@ -32,6 +32,8 @@ import {AppointmentService} from "../../services/appointment.service";
 export class AppointmentDialogComponent {
   appointmentForm: FormGroup;
   selectedWeekday: string;
+  showValidTimeMessage: boolean = false;
+  private readonly localStorageKey = 'appointments';
 
   @Input() appointmentData!: {
     uuid: string;
@@ -60,6 +62,7 @@ export class AppointmentDialogComponent {
     private formBuilder: FormBuilder,
     private dateService: DateService, // Inject DateService
     private appointmentService: AppointmentService
+    
   ) {
     // Initialize the form and determine the initial weekday selection
     this.selectedWeekday = this.dateService.getWeekdayFromDate(this.data.date || new Date());
@@ -74,29 +77,70 @@ export class AppointmentDialogComponent {
       },
       {         validators: [
           timeRangeValidator,
-          teacherAvailabilityValidator(this.appointmentService, this.dateService) // Pass services here
+          teacherAvailabilityValidator(this.appointmentService, this.dateService)
+          // Pass services here
         ]
+
       }
     );
+    this.appointmentForm.valueChanges.subscribe(() => {
+      this.checkValidTimes();
+    });
   }
 
   onNoClick(): void {
     this.dialogRef.close();
   }
 
-  onSaveClick(): void {
-    if (this.appointmentForm.valid) {
-      const data = {
-        title: this.appointmentForm.controls['title'].value,
-        teacher: this.appointmentForm.controls['teacher'].value,
-        date: this.getSelectedDate(), // Convert weekday to actual date
-        startTime: this.appointmentForm.controls['startTime'].value,
-        endTime: this.appointmentForm.controls['endTime'].value,
-        uuid: this.data.uuid,
-      };
-      this.dialogRef.close(data);
+  checkValidTimes(): void {
+    const startTime = this.appointmentForm.get('startTime')?.value;
+    const endTime = this.appointmentForm.get('endTime')?.value;
+
+    if (startTime && endTime) {
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+      const startDate = new Date();
+      startDate.setHours(startHours, startMinutes, 0, 0);
+
+      const endDate = new Date();
+      endDate.setHours(endHours, endMinutes, 0, 0);
+
+      // Time cannot exceed 17:30
+      const maxTime = new Date();
+      maxTime.setHours(17, 30, 0, 0);
+
+      // If both times are valid, set flag to show the message
+      this.showValidTimeMessage = startDate <= maxTime && endDate <= maxTime;
     }
   }
+
+  onSaveClick(): void {
+  if (this.appointmentForm.valid) {
+    const data = {
+      title: this.appointmentForm.controls['title'].value,
+      teacher: this.appointmentForm.controls['teacher'].value,
+      date: this.getSelectedDate(), // Convert weekday to actual date
+      startTime: this.appointmentForm.controls['startTime'].value,
+      endTime: this.appointmentForm.controls['endTime'].value,
+      uuid: this.data.uuid || crypto.randomUUID(), // Generate UUID if not provided
+    };
+
+    // Pobierz istniejące dane z localStorage
+    const existingAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+
+    // Zaktualizuj lub dodaj nowe dane do listy
+    const updatedAppointments = existingAppointments.filter((appt: any) => appt.uuid !== data.uuid);
+    updatedAppointments.push(data);
+
+    // Zapisz zaktualizowaną listę do localStorage
+    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+
+    this.save.emit(data); // Emit the data
+    this.dialogRef.close(data);
+  }
+}
+
 
   onDeleteClick(): void {
     this.dialogRef.close({ remove: true, uuid: this.data.uuid });
@@ -113,6 +157,18 @@ export class AppointmentDialogComponent {
 
   }
   onCancelClick(): void {
-    this.cancel.emit();
+  localStorage.removeItem(this.localStorageKey); // Usuń dane z local storage
+  this.cancel.emit(); // Emitowanie zdarzenia "cancel"
+  this.dialogRef.close(); // Zamknięcie dialogu
+}
+generateRandomColor(): string {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
   }
+  return color;
+}
+
+
 }
